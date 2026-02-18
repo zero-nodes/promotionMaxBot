@@ -12,16 +12,22 @@ type Messages struct {
     MenuText             string `json:"MenuText"`
     PromotionRules       string `json:"promotionRules"`
     ActiveTicketsCount   string `json:"ActiveTicketsCount"`
+	TextWithChannelLink  string `json:"TextWithChannelLink"`
+	InstructionsForActivatingTheCoupon 	string `json:"InstructionsForActivatingTheCoupon"`
+	ExceedingTicketActivationLimit   	string `json:"exceedingTicketActivationLimit"`
+	MessageTiketActivationReady 		string `json:"MessageTiketActivationReady"`
 }
 
 type Links struct {
     Main   string `json:"Main"`
     Rating string `json:"Rating"`
+	Channel string `json:"Channel"`
 }
 
 type Settings struct {
     Message Messages `json:"Messages"`
     Link    Links    `json:"Links"`
+	DayActivatianLimit int `json:"DayActivatianLimit"`	
 }
 
 func NewSetting(path string) (Settings, error) {

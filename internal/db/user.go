@@ -17,7 +17,9 @@ type User struct {
 	//  -1 - user not found
 	//	0 - free user
 	//  1 - Waiting name from a user 
+	//  2 - Waiting photo tiket from a user 
 	Status int
+	ShowAds bool
 	Creates_at time.Time
 }
 
@@ -47,6 +49,32 @@ func (s *PgStorage) IsUserExistsById(ctx context.Context, idMax int64) (bool, er
 	}
 
     return exists, err
+}
+
+func (s *PgStorage) GetUserShowAdsById(ctx context.Context, idMax int64) (bool, error) {
+    var userShowAds bool
+    err := s.db.QueryRow(ctx,
+        "SELECT show_ads FROM users WHERE id_max = $1", idMax).
+        Scan(&userShowAds)
+	
+	if err != nil {
+		return true, fmt.Errorf("GetUserShowAdsById failed: %w", err)
+    }
+
+    return userShowAds, err
+}
+
+func (s *PgStorage) SetUserShowAdsById(ctx context.Context, idMax int64, newShowAds bool) error {
+    _, err := s.db.Exec(ctx,
+        `UPDATE users 
+		 SET show_ads = $1
+		 WHERE id_max = $2`,
+        newShowAds, idMax,
+    )
+    if err != nil {
+        return fmt.Errorf("Update User show_ads failed: %w", err)
+    }
+    return nil
 }
 
 func (s *PgStorage) GetUserStatusById(ctx context.Context, idMax int64) (int, error) {
@@ -91,3 +119,21 @@ func (s *PgStorage) SetUserNameAndStatusById(ctx context.Context, idMax int64, n
     }
     return nil
 }
+
+func (s *PgStorage) GetUserNameById(ctx context.Context, idMax int64) (string, error) {
+    var userName string
+    err := s.db.QueryRow(ctx,
+        "SELECT name FROM users WHERE id_max = $1", idMax).
+        Scan(&userName)
+	
+	if err != nil {
+        if errors.Is(err, pgx.ErrNoRows) {
+            return "", err
+		}
+        
+		return "", fmt.Errorf("GetUserNameById failed: %w", err)
+    }
+
+    return userName, err
+}
+

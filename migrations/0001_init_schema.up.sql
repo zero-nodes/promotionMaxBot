@@ -3,6 +3,7 @@ CREATE TABLE users (
     id_max BIGINT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     status INTEGER NOT NULL,
+    show_ads BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT now()
 );
 
