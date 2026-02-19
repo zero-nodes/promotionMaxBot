@@ -1,4 +1,4 @@
-package main
+package settings
 
 import (
 	"encoding/json"
@@ -28,6 +28,7 @@ type Settings struct {
     Message Messages `json:"Messages"`
     Link    Links    `json:"Links"`
 	DayActivatianLimit int `json:"DayActivatianLimit"`	
+	NumberTicketToCheck int `json:"NumberTicketToCheck"`
 }
 
 func NewSetting(path string) (Settings, error) {
