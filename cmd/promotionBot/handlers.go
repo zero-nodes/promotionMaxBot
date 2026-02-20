@@ -73,7 +73,7 @@ func SendMenu(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStora
 	keyboard.AddRow().AddCallback("Активировать купон", schemes.DEFAULT, "startActivationTiket")
 	keyboard.AddRow().AddCallback("Количество Ваших активных купонов", schemes.DEFAULT, "tiketsCount")
 	keyboard.AddRow().AddLink("Проверь свои шансы на победу", schemes.DEFAULT, cfg.Link.Rating)
-	keyboard.AddRow().AddCallback("Правила акции", schemes.DEFAULT, "promotionRules").AddLink("🌐 Наш сайт", schemes.DEFAULT, cfg.Link.Main)
+	keyboard.AddRow().AddCallback("Правила акции", schemes.DEFAULT, "promotionRules").AddLink("Наш канал", schemes.DEFAULT, cfg.Link.Channel)
 
 	err = api.Messages.Send(ctx, maxbot.NewMessage().AddKeyboard(keyboard).SetUser(userId).SetText(cfg.Message.MenuText))
 	if err != nil {
@@ -83,7 +83,7 @@ func SendMenu(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStora
 }
 
 func SendRules(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
-	err := api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.PromotionRules))
+	err := api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.PromotionRules).SetFormat("html"))
 	if err != nil {
 		return fmt.Errorf("Send message error -> %w", err);
 	}
@@ -121,12 +121,12 @@ func StartActivationTiket(ctx context.Context, api *maxbot.Api, userId int64, db
 
 	if userShowAds == true {
 		keyboard := api.Messages.NewKeyboardBuilder()
-		keyboard.AddRow().AddLink("Наш канал", schemes.DEFAULT, cfg.Link.Channel)
-		keyboard.AddRow().AddCallback("Продлжить активацию купона", schemes.DEFAULT, "continuationActivationTiket")
+		keyboard.AddRow().AddLink("Перейти в канал", schemes.DEFAULT, cfg.Link.Channel)
+		keyboard.AddRow().AddCallback("Продолжить активацию купона", schemes.DEFAULT, "continuationActivationTiket")
 		keyboard.AddRow().AddCallback("Больше не показывать", schemes.DEFAULT, "notShowAgainTextWithChannelLink")
-		keyboard.AddRow().AddCallback("Вернуться в меню", schemes.DEFAULT, "menu")
+		keyboard.AddRow().AddCallback("Вернуться в главное меню", schemes.DEFAULT, "menu")
 
-		err = api.Messages.Send(ctx, maxbot.NewMessage().AddKeyboard(keyboard).SetUser(userId).SetText(cfg.Message.TextWithChannelLink))
+		err = api.Messages.Send(ctx, maxbot.NewMessage().AddKeyboard(keyboard).SetUser(userId).SetText(cfg.Message.TextWithChannelLink).SetFormat("html"))
 		if err != nil {
 			return fmt.Errorf("Send message error -> %w", err);
 		}
@@ -158,7 +158,7 @@ func ContinuationActivationTiket(ctx context.Context, api *maxbot.Api, userId in
 	} 
 	
 	keyboard := api.Messages.NewKeyboardBuilder()
-	keyboard.AddRow().AddCallback("Вернуться в меню", schemes.DEFAULT, "menu")
+	keyboard.AddRow().AddCallback("Вернуться в главное меню", schemes.DEFAULT, "menu")
 
 	userName, err := db.GetUserNameById(ctx, userId)
 	if err != nil {
@@ -179,7 +179,7 @@ func ContinuationActivationTiket(ctx context.Context, api *maxbot.Api, userId in
 }
 
 func GetActivationTiket (ctx context.Context, api *maxbot.Api, upd *schemes.MessageCreatedUpdate, db *db.PgStorage, cfg *settings.Settings) error {
-	if len(upd.Message.Body.RawAttachments) == 0 {
+	if len(upd.Message.Body.RawAttachments) != 1 {
 		err := ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg);
 		if err != nil {
 			return fmt.Errorf("Error continuation activation tiket -> %w", err);
