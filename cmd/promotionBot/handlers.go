@@ -1,14 +1,14 @@
 package main
 
 import (
-	"agrotorgPromotionMaxBot/internal/db"
+	"promotionMaxBot/internal/db"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
-	"agrotorgPromotionMaxBot/internal/settings"
+	"promotionMaxBot/internal/settings"
 
 	maxbot "github.com/max-messenger/max-bot-api-client-go"
 	"github.com/max-messenger/max-bot-api-client-go/schemes"

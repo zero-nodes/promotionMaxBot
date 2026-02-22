@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	thisApi "agrotorgPromotionMaxBot/internal/api"
-	"agrotorgPromotionMaxBot/internal/db"
-	"agrotorgPromotionMaxBot/internal/settings"
+	thisApi "promotionMaxBot/internal/api"
+	"promotionMaxBot/internal/db"
+	"promotionMaxBot/internal/settings"
 
 	"github.com/gorilla/mux"
 	maxbot "github.com/max-messenger/max-bot-api-client-go"

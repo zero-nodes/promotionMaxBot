@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"agrotorgPromotionMaxBot/internal/db"
-	"agrotorgPromotionMaxBot/internal/settings"
+	"promotionMaxBot/internal/db"
+	"promotionMaxBot/internal/settings"
 
 	maxbot "github.com/max-messenger/max-bot-api-client-go"
 	"github.com/max-messenger/max-bot-api-client-go/schemes"

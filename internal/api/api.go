@@ -1,7 +1,7 @@
 package api
 
 import (
-	"agrotorgPromotionMaxBot/internal/db"
+	"promotionMaxBot/internal/db"
 	"context"
 	"net/http"
 

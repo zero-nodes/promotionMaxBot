@@ -30,14 +30,6 @@ THIS_API_TOKEN=some_secret_token_for_http_api
 
 3. **Настроить `settings.json`** с текстами, ссылками и лимитами
 
-4. **Собрать и запустить**
-
-```bash
-go mod download
-go build -o bot .
-./bot
-```
-
 
 ## 🚀 Использование
 

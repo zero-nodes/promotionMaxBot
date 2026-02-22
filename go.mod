@@ -1,4 +1,4 @@
-module agrotorgPromotionMaxBot
+module promotionMaxBot
 
 go 1.25.5
 
