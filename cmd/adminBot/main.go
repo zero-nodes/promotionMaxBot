@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,24 +17,31 @@ import (
 	"github.com/mew-sh/dotenv"
 )
 
-
 func main() {
-	if err := dotenv.Load(); err != nil { fmt.Println(err) }
+	if err := dotenv.Load(); err != nil { 
+		panic(err) 
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
 	api, _ := maxbot.New(os.Getenv("TOKEN"))
 	_, err := api.Bots.GetBot(ctx)
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 
 	cfg, err := settings.NewSetting("settings.json")
-	if err != nil { panic(err) }
+	if err != nil { 
+		panic(err)
+	}
 	
 	db, err := db.NewPgStorage(os.Getenv("DB_URL"));
-	if err != nil { panic(err) }
+	if err != nil { 
+		panic(err)
+	}
 	defer db.Close()
 
-	fmt.Println("Started bot");
+	log.Println("Started bot");
 	for upd := range api.GetUpdates(ctx) {
 		switch upd := upd.(type) {
 		case *schemes.MessageCallbackUpdate:
@@ -42,39 +49,39 @@ func main() {
 			case upd.Callback.Payload == "startCheckTiket":
 				err := StartCheckTiket(ctx, api, upd.GetUserID(), db, &cfg)
 				if err != nil {
-					fmt.Printf("Error start check ticket -> %v\n", err)
+					log.Printf("Error start check ticket -> %v\n", err)
 					continue
 				}
 			case strings.HasPrefix(upd.Callback.Payload, "confirm_"):
 				idStr := strings.TrimPrefix(upd.Callback.Payload, "confirm_")
 				id, err := strconv.Atoi(idStr)
 				if err != nil {
-					fmt.Println("invalid id:", err)
+					log.Println("invalid id:", err)
 					continue
 				}
 
 				err = ConfirmTiket(ctx, api, upd, db, &cfg, id)
 				if err != nil {
-					fmt.Printf("Error confirm -> %v\n", err)
+					log.Printf("Error confirm -> %v\n", err)
 				}
 			case strings.HasPrefix(upd.Callback.Payload, "reject_"):
 				idStr := strings.TrimPrefix(upd.Callback.Payload, "reject_")
 				id, err := strconv.Atoi(idStr)
 				if err != nil {
-					fmt.Println("invalid id:", err)
+					log.Println("invalid id:", err)
 					continue
 				}
 
 				err = RejectTiket(ctx, api, upd, db, &cfg, id)
 				if err != nil {
-					fmt.Printf("Error reject -> %v\n", err)
+					log.Printf("Error reject -> %v\n", err)
 				}
 			}
 			
 		default:
 			err := SendMenu(ctx, api, upd.GetUserID(), db, &cfg)
 			if err != nil {
-				fmt.Printf("Error send menu -> %v\n", err)
+				log.Printf("Error send menu -> %v\n", err)
 				continue
 			}
 		}

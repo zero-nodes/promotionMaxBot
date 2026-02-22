@@ -137,3 +137,28 @@ func (s *PgStorage) GetUserNameById(ctx context.Context, idMax int64) (string, e
     return userName, err
 }
 
+func (s *PgStorage) GetListAllUserId(ctx context.Context) ([]int64, error) {
+	rows, err := s.db.Query(ctx, "SELECT id_max FROM users")
+	if err != nil {
+		return nil, fmt.Errorf("error get list all user id -> %w", err)
+	}
+	defer rows.Close()
+	
+	var ids []int64
+	for rows.Next() {
+		var id int64
+
+		err = rows.Scan(&id,)
+		if err != nil {
+			return nil, fmt.Errorf("error scan rows list user id -> %w", err)
+		}
+
+		ids = append(ids, id)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error rows iteration -> %w", err)
+	}
+
+	return ids, nil
+}

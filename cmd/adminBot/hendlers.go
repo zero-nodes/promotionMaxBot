@@ -43,13 +43,14 @@ func StartCheckTiket(ctx context.Context, api *maxbot.Api, userId int64, db *db.
 	}
 	
 	for _, tiket := range tikets {
-		filePath := fmt.Sprintf("imege_%v", tiket.ID)
+		filePath := fmt.Sprintf("image_%v", tiket.ID)
 		file, err := os.Create(filePath)
 		if err != nil{
 			return fmt.Errorf("Error to create file -> %w", err) 
 		}
 		file.Write(tiket.Photo)
 		file.Close()
+		defer os.Remove(fmt.Sprintf("image_%v", tiket.ID))
 
 		photo, err := api.Uploads.UploadPhotoFromFile(ctx, "./" + filePath)
 		if err != nil {
@@ -64,6 +65,7 @@ func StartCheckTiket(ctx context.Context, api *maxbot.Api, userId int64, db *db.
 		if err != nil {
 			return fmt.Errorf("Send message error -> %w", err);
 		}
+
 	}
 
 	err = SendMenu(ctx, api, userId, db, cfg);
@@ -92,11 +94,6 @@ func ConfirmTiket(ctx context.Context, api *maxbot.Api, upd *schemes.MessageCall
         return fmt.Errorf("error answering callback: %w", err)
     }
 
-	err = os.Remove(fmt.Sprintf("imege_%v", idTiket))
-	if err != nil {
-		return fmt.Errorf("Error remove file -> %w", err)
-	}
-
     return nil
 }
 
@@ -116,11 +113,6 @@ func RejectTiket(ctx context.Context, api *maxbot.Api, upd *schemes.MessageCallb
 	_, err = api.Messages.AnswerOnCallback(ctx, upd.Callback.CallbackID, answer)
 	if err != nil {
 		return fmt.Errorf("error answering callback: %w", err)
-	}
-
-	err = os.Remove(fmt.Sprintf("imege_%v", idTiket))
-	if err != nil {
-		return fmt.Errorf("Error remove file -> %w", err)
 	}
 
 	return nil
