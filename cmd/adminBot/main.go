@@ -23,7 +23,7 @@ import (
 	"github.com/mew-sh/dotenv"
 )
 
-const webhookPath = "/webhook"
+const webhookPath = "/webhook-admin"
 
 var updateTypes = []string{
 	"bot_started",
@@ -123,12 +123,12 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:    ":8088",
+		Addr:    ":8089",
 		Handler: router,
 	}
 
 	go func() {
-		log.Println("HTTP server started on :8088")
+		log.Println("HTTP server started on :8089")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("ListenAndServe error: %v", err)
 		}
