@@ -206,6 +206,11 @@ func handleUpdate(ctx context.Context, api *maxbot.Api, upd interface{}, db *db.
 			if err := ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg); err != nil {
 				log.Printf("ContinuationActivationTiket error: %v", err)
 			}
+		case "checkSubscription":
+			err := ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg)
+			if err != nil {
+				log.Printf("checkSubscription error: %v", err)
+			}
 		case "notShowAgainTextWithChannelLink":
 			if err := db.SetUserShowAdsById(ctx, upd.GetUserID(), false); err != nil {
 				log.Printf("SetUserShowAdsById error: %v", err)

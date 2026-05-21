@@ -16,12 +16,15 @@ type Messages struct {
 	InstructionsForActivatingTheCoupon 	string `json:"InstructionsForActivatingTheCoupon"`
 	ExceedingTicketActivationLimit   	string `json:"exceedingTicketActivationLimit"`
 	MessageTiketActivationReady 		string `json:"MessageTiketActivationReady"`
+	SubscribeRequiredText string `json:"SubscribeRequiredText"`
+    SubscribeButtonText   string `json:"SubscribeButtonText,omitempty"`
 }
 
 type Links struct {
     Main   string `json:"Main"`
     Rating string `json:"Rating"`
 	Channel string `json:"Channel"`
+	ChannelID int64  `json:"ChannelID"`
 }
 
 type Settings struct {

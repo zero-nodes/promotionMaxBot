@@ -1,204 +1,249 @@
 package main
 
 import (
-	"promotionMaxBot/internal/db"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
+	"promotionMaxBot/internal/db"
 	"promotionMaxBot/internal/settings"
 
 	maxbot "github.com/max-messenger/max-bot-api-client-go"
 	"github.com/max-messenger/max-bot-api-client-go/schemes"
 )
 
-func UserOnRegistration (ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
+// UserOnRegistration регистрация нового пользователя
+func UserOnRegistration(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
 	err := db.AddUser(ctx, userId, "User on registration", 1)
 	if err != nil {
-		return fmt.Errorf("Error add user -> %w", err);
+		return fmt.Errorf("Error add user -> %w", err)
 	}
 
-	err = api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.Hello))
+	err = api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			SetUser(userId).
+			SetText(cfg.Message.Hello),
+	)
 	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
 
-	err = api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.RegistrationQuestion))
+	err = api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			SetUser(userId).
+			SetText(cfg.Message.RegistrationQuestion),
+	)
 	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
 
 	return nil
 }
 
-func ContinuationRegistration (ctx context.Context, api *maxbot.Api, upd *schemes.MessageCreatedUpdate, db *db.PgStorage, cfg *settings.Settings) error {
-	maxId := upd.GetUserID();
+// ContinuationRegistration завершение регистрации
+func ContinuationRegistration(ctx context.Context, api *maxbot.Api, upd *schemes.MessageCreatedUpdate, db *db.PgStorage, cfg *settings.Settings) error {
+	maxId := upd.GetUserID()
+
 	if upd.Message.Body.Text == "" {
-		err := api.Messages.Send(ctx, maxbot.NewMessage().SetUser(maxId).SetText("Некорректные данные. Пожалуйста, введите текстовое имя"))
+		err := api.Messages.Send(ctx,
+			maxbot.NewMessage().
+				SetUser(maxId).
+				SetText("Некорректные данные. Пожалуйста, введите текстовое имя"),
+		)
 		if err != nil {
-			return fmt.Errorf("Send message error -> %w", err);
+			return fmt.Errorf("Send message error -> %w", err)
 		}
 		return nil
 	}
-	
-	userName := upd.Message.Body.Text;
-	err := db.SetUserNameAndStatusById(ctx, maxId, userName, 0);
+
+	userName := upd.Message.Body.Text
+	err := db.SetUserNameAndStatusById(ctx, maxId, userName, 0)
 	if err != nil {
 		return fmt.Errorf("Error update user -> %w", err)
 	}
-	
-	
-	err = api.Messages.Send(ctx, maxbot.NewMessage().SetUser(maxId).SetText("Регистрация прошла успешно, " + userName + "!"))
+
+	err = api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			SetUser(maxId).
+			SetText("Регистрация прошла успешно, "+userName+"!"),
+	)
 	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
 
-	err = SendMenu(ctx, api, upd.GetUserID(), db, cfg)
-	if err != nil {
-		return fmt.Errorf("Error send menu -> %w", err)
-	}
-
-	return nil
+	return SendMenu(ctx, api, upd.GetUserID(), db, cfg)
 }
 
+// SendMenu главное меню
 func SendMenu(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
-	err := db.SetUserStatusById(ctx, userId, 0);
+	err := db.SetUserStatusById(ctx, userId, 0)
 	if err != nil {
 		return fmt.Errorf("Error update user -> %w", err)
 	}
 
 	keyboard := api.Messages.NewKeyboardBuilder()
-	keyboard.AddRow().AddCallback("Активировать купон", schemes.DEFAULT, "startActivationTiket")
-	keyboard.AddRow().AddCallback("Количество Ваших активных купонов", schemes.DEFAULT, "tiketsCount")
-	keyboard.AddRow().AddLink("Проверь свои шансы на победу", schemes.DEFAULT, cfg.Link.Rating)
-	keyboard.AddRow().AddCallback("Правила акции", schemes.DEFAULT, "promotionRules").AddLink("Наш канал", schemes.DEFAULT, cfg.Link.Channel)
+	keyboard.AddRow().
+		AddCallback("Активировать купон", schemes.DEFAULT, "startActivationTiket")
+	keyboard.AddRow().
+		AddCallback("Количество Ваших активных купонов", schemes.DEFAULT, "tiketsCount")
+	keyboard.AddRow().
+		AddLink("Проверь свои шансы на победу", schemes.DEFAULT, cfg.Link.Rating)
+	keyboard.AddRow().
+		AddCallback("Правила акции", schemes.DEFAULT, "promotionRules").
+		AddLink("Наш канал", schemes.DEFAULT, cfg.Link.Channel)
 
-	err = api.Messages.Send(ctx, maxbot.NewMessage().AddKeyboard(keyboard).SetUser(userId).SetText(cfg.Message.MenuText))
-	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
-	}
-	return nil
+	return api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			AddKeyboard(keyboard).
+			SetUser(userId).
+			SetText(cfg.Message.MenuText),
+	)
 }
 
+// SendRules отправка правил акции
 func SendRules(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
-	err := api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.PromotionRules).SetFormat("html"))
+	err := api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			SetUser(userId).
+			SetText(cfg.Message.PromotionRules).
+			SetFormat("html"),
+	)
 	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
-
-	err = SendMenu(ctx, api, userId, db, cfg);
-	if err != nil {
-		return fmt.Errorf("Error send menu -> %w", err);
-	}
-	return nil
+	return SendMenu(ctx, api, userId, db, cfg)
 }
 
+// SendTiketsCount количество активных купонов
 func SendTiketsCount(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
-	tiketsCount, err := db.GetTiketsCount(ctx, userId);
+	tiketsCount, err := db.GetTiketsCount(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("Error get tikets count -> %w", err)
 	}
-	
-	err = api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.ActiveTicketsCount + fmt.Sprintf("%v", tiketsCount)))
-	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
-	}
 
-	err = SendMenu(ctx, api, userId, db, cfg);
+	err = api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			SetUser(userId).
+			SetText(cfg.Message.ActiveTicketsCount+fmt.Sprintf("%v", tiketsCount)),
+	)
 	if err != nil {
-		return fmt.Errorf("Error send menu -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
-	return nil
+	return SendMenu(ctx, api, userId, db, cfg)
 }
 
+// StartActivationTiket – немедленная проверка подписки (старая логика с рекламой удалена)
 func StartActivationTiket(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
-	userShowAds, err := db.GetUserShowAdsById(ctx, userId)
-	if err != nil {
-		return fmt.Errorf("Error get user show_ads -> %w", err);
-	}
-
-	if userShowAds == true {
-		keyboard := api.Messages.NewKeyboardBuilder()
-		keyboard.AddRow().AddLink("Перейти в канал", schemes.DEFAULT, cfg.Link.Channel)
-		keyboard.AddRow().AddCallback("Продолжить активацию купона", schemes.DEFAULT, "continuationActivationTiket")
-		keyboard.AddRow().AddCallback("Больше не показывать", schemes.DEFAULT, "notShowAgainTextWithChannelLink")
-		keyboard.AddRow().AddCallback("Вернуться в главное меню", schemes.DEFAULT, "menu")
-
-		err = api.Messages.Send(ctx, maxbot.NewMessage().AddKeyboard(keyboard).SetUser(userId).SetText(cfg.Message.TextWithChannelLink).SetFormat("html"))
-		if err != nil {
-			return fmt.Errorf("Send message error -> %w", err);
-		}
-	} else {
-		err := ContinuationActivationTiket(ctx, api, userId, db, cfg);
-		if err != nil {
-			return fmt.Errorf("Error continuation activation tiket -> %w", err);
-		}
-	}
-
-	return nil
+	return ContinuationActivationTiket(ctx, api, userId, db, cfg)
 }
 
+// ContinuationActivationTiket проверяет подписку и, если успешно, запускает активацию купона
 func ContinuationActivationTiket(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
-	todayTiketsCount, err := db.GetTiketsCountToday(ctx, userId);
+	channelID := cfg.Link.ChannelID
+	if channelID == 0 {
+		log.Println("WARNING: ChannelID is not set, subscription check skipped")
+		return activateCoupon(ctx, api, userId, db, cfg)
+	}
+
+	members, err := api.Chats.GetSpecificChatMembers(ctx, channelID, []int64{userId})
+	if err != nil {
+		log.Printf("GetSpecificChatMembers error: %v", err)
+		return sendSubscriptionRequired(ctx, api, userId, cfg)
+	}
+
+	for _, member := range members.Members {
+		if member.UserId == userId {
+			return activateCoupon(ctx, api, userId, db, cfg)
+		}
+	}
+
+	return sendSubscriptionRequired(ctx, api, userId, cfg)
+}
+
+// activateCoupon – основная логика выдачи купона (без изменений)
+func activateCoupon(ctx context.Context, api *maxbot.Api, userId int64, db *db.PgStorage, cfg *settings.Settings) error {
+	todayTiketsCount, err := db.GetTiketsCountToday(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("Error get tikets count -> %w", err)
 	}
+
 	if todayTiketsCount >= cfg.DayActivatianLimit {
-		err = api.Messages.Send(ctx, maxbot.NewMessage().SetUser(userId).SetText(cfg.Message.ExceedingTicketActivationLimit))
+		err = api.Messages.Send(ctx,
+			maxbot.NewMessage().
+				SetUser(userId).
+				SetText(cfg.Message.ExceedingTicketActivationLimit),
+		)
 		if err != nil {
-			return fmt.Errorf("Send message error -> %w", err);
+			return fmt.Errorf("Send message error -> %w", err)
 		}
-		err = SendMenu(ctx, api, userId, db, cfg);
-		if err != nil {
-			return fmt.Errorf("Error send menu -> %w", err);
-		}
-		return nil
-	} 
-	
+		return SendMenu(ctx, api, userId, db, cfg)
+	}
+
 	keyboard := api.Messages.NewKeyboardBuilder()
-	keyboard.AddRow().AddCallback("Вернуться в главное меню", schemes.DEFAULT, "menu")
+	keyboard.AddRow().
+		AddCallback("Вернуться в главное меню", schemes.DEFAULT, "menu")
 
 	userName, err := db.GetUserNameById(ctx, userId)
 	if err != nil {
-		return fmt.Errorf("Error get user name -> %w", err);
+		return fmt.Errorf("Error get user name -> %w", err)
 	}
 
-	err = api.Messages.Send(ctx, maxbot.NewMessage().AddKeyboard(keyboard).SetUser(userId).SetText(fmt.Sprintf(cfg.Message.InstructionsForActivatingTheCoupon, userName)))
+	err = api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			AddKeyboard(keyboard).
+			SetUser(userId).
+			SetText(fmt.Sprintf(cfg.Message.InstructionsForActivatingTheCoupon, userName)),
+	)
 	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
 
-	err = db.SetUserStatusById(ctx, userId, 2);
-	if err != nil {
-		return fmt.Errorf("Error update user -> %w", err)
-	}
-
-	return nil
+	return db.SetUserStatusById(ctx, userId, 2)
 }
 
-func GetActivationTiket (ctx context.Context, api *maxbot.Api, upd *schemes.MessageCreatedUpdate, db *db.PgStorage, cfg *settings.Settings) error {
-	if len(upd.Message.Body.RawAttachments) != 1 {
-		err := ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg);
-		if err != nil {
-			return fmt.Errorf("Error continuation activation tiket -> %w", err);
-		}
-		return nil
-	}	
+// sendSubscriptionRequired – сообщение о необходимости подписки с кнопками «Перейти в канал» и «Проверить подписку»
+func sendSubscriptionRequired(ctx context.Context, api *maxbot.Api, userId int64, cfg *settings.Settings) error {
+	text := cfg.Message.SubscribeRequiredText
+	if text == "" {
+		text = "Для продолжения необходимо подписаться на наш канал."
+	}
 
-    raw := upd.Message.Body.RawAttachments[0]
+	btnLinkText := cfg.Message.SubscribeButtonText
+	if btnLinkText == "" {
+		btnLinkText = "Перейти в канал"
+	}
+
+	keyboard := api.Messages.NewKeyboardBuilder()
+	keyboard.AddRow().
+		AddLink(btnLinkText, schemes.DEFAULT, cfg.Link.Channel)
+	keyboard.AddRow().
+		AddCallback("Проверить подписку", schemes.DEFAULT, "checkSubscription")
+
+	return api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			AddKeyboard(keyboard).
+			SetUser(userId).
+			SetText(text),
+	)
+}
+
+// GetActivationTiket – загрузка купона (без изменений)
+func GetActivationTiket(ctx context.Context, api *maxbot.Api, upd *schemes.MessageCreatedUpdate, db *db.PgStorage, cfg *settings.Settings) error {
+	if len(upd.Message.Body.RawAttachments) != 1 {
+		return ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg)
+	}
+
+	raw := upd.Message.Body.RawAttachments[0]
 	var typeCheck struct {
 		Type schemes.AttachmentType `json:"type"`
 	}
 
 	if !(json.Unmarshal(raw, &typeCheck) == nil && typeCheck.Type == schemes.AttachmentImage) {
-		err := ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg);
-		if err != nil {
-			return fmt.Errorf("Error continuation activation tiket -> %w", err);
-		}
-		return nil
-	}	
+		return ContinuationActivationTiket(ctx, api, upd.GetUserID(), db, cfg)
+	}
 
 	var photo schemes.PhotoAttachment
 	if err := json.Unmarshal(raw, &photo); err != nil {
@@ -221,16 +266,14 @@ func GetActivationTiket (ctx context.Context, api *maxbot.Api, upd *schemes.Mess
 		return fmt.Errorf("failed add tiket -> %w", err)
 	}
 
-	err = api.Messages.Send(ctx, maxbot.NewMessage().SetUser(upd.GetUserID()).SetText(cfg.Message.MessageTiketActivationReady))
+	err = api.Messages.Send(ctx,
+		maxbot.NewMessage().
+			SetUser(upd.GetUserID()).
+			SetText(cfg.Message.MessageTiketActivationReady),
+	)
 	if err != nil {
-		return fmt.Errorf("Send message error -> %w", err);
+		return fmt.Errorf("Send message error -> %w", err)
 	}
 
-	err = SendMenu(ctx, api, upd.GetUserID(), db, cfg);
-	if err != nil {
-		return fmt.Errorf("Error send menu -> %w", err);
-	}
-
-	return nil
+	return SendMenu(ctx, api, upd.GetUserID(), db, cfg)
 }
-
